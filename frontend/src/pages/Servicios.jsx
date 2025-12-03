@@ -1,65 +1,114 @@
-import { useState } from 'react'
-import { Plus, Search, Coffee, Utensils, Wind } from 'lucide-react'
-import StatusBadge from '../components/common/StatusBadge'
+import { useState, useEffect, useMemo } from 'react'
+import { Plus, Search, Edit, Trash2 } from 'lucide-react'
+import Modal from '../components/common/Modal'
+import ConfirmDialog from '../components/common/ConfirmDialog'
+import ServicioForm from '../components/forms/ServicioForm'
+import { useToast } from '../hooks/useToast'
+import { serviciosAPI } from '../services/api'
 
 const Servicios = () => {
   const [searchTerm, setSearchTerm] = useState('')
+  const [servicios, setServicios] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedServicio, setSelectedServicio] = useState(null)
+  const toast = useToast()
 
-  // Mock data
-  const servicios = [
-    {
-      id: 1,
-      nombre: 'Desayuno Buffet',
-      categoria: 'Restaurante',
-      descripcion: 'Desayuno buffet completo',
-      precio: 25,
-      activo: true,
-      icon: Utensils
-    },
-    {
-      id: 2,
-      nombre: 'Servicio de Habitación',
-      categoria: 'Room Service',
-      descripcion: 'Comida en habitación 24/7',
-      precio: 15,
-      activo: true,
-      icon: Coffee
-    },
-    {
-      id: 3,
-      nombre: 'Lavandería Express',
-      categoria: 'Lavandería',
-      descripcion: 'Servicio de lavado rápido',
-      precio: 30,
-      activo: true,
-      icon: Wind
-    },
-    {
-      id: 4,
-      nombre: 'Spa y Masajes',
-      categoria: 'Spa',
-      descripcion: 'Masajes relajantes',
-      precio: 80,
-      activo: true,
-      icon: Wind
+  useEffect(() => {
+    fetchServicios()
+  }, [])
+
+  const fetchServicios = async () => {
+    try {
+      setLoading(true)
+      const response = await serviciosAPI.getAll()
+      setServicios(response.data.data || [])
+    } catch (error) {
+      toast.error('Error al cargar servicios')
+      console.error('Error fetching servicios:', error)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+
+  const handleAdd = async (data) => {
+    try {
+      await serviciosAPI.create(data)
+      toast.success('Servicio creado exitosamente')
+      setIsAddModalOpen(false)
+      fetchServicios()
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al crear servicio')
+    }
+  }
+
+  const handleEdit = async (data) => {
+    try {
+      await serviciosAPI.update(selectedServicio.id, data)
+      toast.success('Servicio actualizado exitosamente')
+      setIsEditModalOpen(false)
+      setSelectedServicio(null)
+      fetchServicios()
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al actualizar servicio')
+    }
+  }
+
+  const handleDelete = async () => {
+    try {
+      await serviciosAPI.delete(selectedServicio.id)
+      toast.success('Servicio eliminado exitosamente')
+      setIsDeleteDialogOpen(false)
+      setSelectedServicio(null)
+      fetchServicios()
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error al eliminar servicio')
+    }
+  }
+
+  const openEditModal = (servicio) => {
+    setSelectedServicio(servicio)
+    setIsEditModalOpen(true)
+  }
+
+  const openDeleteDialog = (servicio) => {
+    setSelectedServicio(servicio)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const filteredServicios = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase()
+    return servicios.filter(servicio =>
+      servicio.nombre?.toLowerCase().includes(searchLower) ||
+      servicio.codigo?.toLowerCase().includes(searchLower) ||
+      servicio.categoria?.toLowerCase().includes(searchLower)
+    )
+  }, [servicios, searchTerm])
+  
+  const precioPromedio = useMemo(() => {
+    if (filteredServicios.length === 0) return 0
+    const total = filteredServicios.reduce((sum, s) => sum + parseFloat(s.precio || 0), 0)
+    return (total / filteredServicios.length).toFixed(2)
+  }, [filteredServicios])
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Servicios del Hotel</h2>
-          <p className="text-gray-600 mt-1">Gestión de servicios disponibles para los huéspedes</p>
+          <h2 className="text-2xl font-bold text-gray-900">Servicios</h2>
+          <p className="text-gray-600 mt-1">Gestión de servicios del hotel</p>
         </div>
-        <button className="btn-primary flex items-center gap-2">
+        <button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="btn-primary flex items-center gap-2"
+        >
           <Plus size={20} />
           Nuevo Servicio
         </button>
       </div>
 
-      {/* Search */}
       <div className="card">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -73,62 +122,118 @@ const Servicios = () => {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="card">
           <div className="text-sm text-gray-600">Total Servicios</div>
-          <div className="text-2xl font-bold text-gray-900">4</div>
+          <div className="text-2xl font-bold text-gray-900">{filteredServicios.length}</div>
         </div>
         <div className="card">
-          <div className="text-sm text-gray-600">Activos</div>
-          <div className="text-2xl font-bold text-green-600">4</div>
+          <div className="text-sm text-gray-600">Disponibles</div>
+          <div className="text-2xl font-bold text-green-600">
+            {filteredServicios.filter(s => s.disponible).length}
+          </div>
         </div>
         <div className="card">
           <div className="text-sm text-gray-600">Categorías</div>
-          <div className="text-2xl font-bold text-blue-600">4</div>
+          <div className="text-2xl font-bold text-primary-600">
+            {new Set(filteredServicios.map(s => s.categoria)).size}
+          </div>
         </div>
         <div className="card">
           <div className="text-sm text-gray-600">Precio Promedio</div>
-          <div className="text-2xl font-bold text-gold-600">S/ 38</div>
+          <div className="text-2xl font-bold text-blue-600">
+            S/. {precioPromedio}
+          </div>
         </div>
       </div>
 
-      {/* Servicios Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {servicios.map((servicio) => {
-          const Icon = servicio.icon
-          return (
-            <div key={servicio.id} className="card hover:shadow-lg transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-primary-100 rounded-lg">
-                    <Icon className="text-primary-600" size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">{servicio.nombre}</h3>
-                    <span className="text-xs text-gray-500">{servicio.categoria}</span>
-                  </div>
-                </div>
-                <StatusBadge status={servicio.activo ? 'ACTIVO' : 'INACTIVO'} />
-              </div>
-
-              <p className="text-sm text-gray-600 mb-4">{servicio.descripcion}</p>
-
-              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                <div>
-                  <p className="text-xs text-gray-600">Precio</p>
-                  <p className="text-2xl font-bold text-gold-600">S/ {servicio.precio}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button className="btn-secondary text-sm py-2">
-                    Editar
-                  </button>
-                </div>
-              </div>
-            </div>
-          )
-        })}
+      <div className="card">
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <p className="mt-2 text-gray-600">Cargando servicios...</p>
+          </div>
+        ) : filteredServicios.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600">No se encontraron servicios</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredServicios.map((servicio) => (
+                  <tr key={servicio.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {servicio.codigo}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {servicio.nombre}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                        {servicio.categoria}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      S/. {parseFloat(servicio.precio).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        servicio.disponible ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {servicio.disponible ? 'Disponible' : 'No disponible'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <button 
+                        onClick={() => openEditModal(servicio)}
+                        className="text-primary-600 hover:text-primary-900 mr-3 inline-flex items-center gap-1"
+                      >
+                        <Edit size={16} />
+                        Editar
+                      </button>
+                      <button 
+                        onClick={() => openDeleteDialog(servicio)}
+                        className="text-red-600 hover:text-red-900 inline-flex items-center gap-1"
+                      >
+                        <Trash2 size={16} />
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Nuevo Servicio" size="md">
+        <ServicioForm onSubmit={handleAdd} onCancel={() => setIsAddModalOpen(false)} />
+      </Modal>
+
+      <Modal isOpen={isEditModalOpen} onClose={() => { setIsEditModalOpen(false); setSelectedServicio(null) }} title="Editar Servicio" size="md">
+        <ServicioForm data={selectedServicio} onSubmit={handleEdit} onCancel={() => { setIsEditModalOpen(false); setSelectedServicio(null) }} />
+      </Modal>
+
+      <ConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onConfirm={handleDelete}
+        onCancel={() => { setIsDeleteDialogOpen(false); setSelectedServicio(null) }}
+        title="Eliminar Servicio"
+        message={`¿Está seguro de eliminar el servicio "${selectedServicio?.nombre}"?`}
+        type="danger"
+      />
     </div>
   )
 }
