@@ -38,6 +38,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            // CSRF is disabled for stateless REST API with JWT authentication
+            // This is safe because:
+            // 1. API is stateless (no session cookies)
+            // 2. JWT tokens are validated on every request
+            // 3. Frontend sends JWT in Authorization header, not cookies
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
