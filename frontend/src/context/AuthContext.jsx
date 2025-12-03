@@ -19,8 +19,15 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      const userData = JSON.parse(localStorage.getItem('user') || '{}')
-      setUser(userData)
+      try {
+        const userData = JSON.parse(localStorage.getItem('user') || '{}')
+        setUser(userData)
+      } catch (error) {
+        console.error('Error parsing user data from localStorage:', error)
+        localStorage.removeItem('user')
+        localStorage.removeItem('token')
+        setToken(null)
+      }
     }
     setLoading(false)
   }, [token])

@@ -42,7 +42,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception ex) {
+        // Log the full exception for debugging
+        ex.printStackTrace();
+        // Return generic message to user to avoid leaking internal details
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Error interno del servidor: " + ex.getMessage()));
+                .body(ApiResponse.error("Error interno del servidor. Por favor contacte al administrador."));
     }
 }
