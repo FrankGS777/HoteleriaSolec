@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Plus, Search, Edit, Trash2, Package } from 'lucide-react'
 import Modal from '../components/common/Modal'
 import ConfirmDialog from '../components/common/ConfirmDialog'
@@ -78,15 +78,20 @@ const Amenities = () => {
     setIsDeleteDialogOpen(true)
   }
 
-  const filteredAmenities = amenities.filter(amenity =>
-    amenity.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    amenity.codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    amenity.categoria?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredAmenities = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase()
+    return amenities.filter(amenity =>
+      amenity.nombre?.toLowerCase().includes(searchLower) ||
+      amenity.codigo?.toLowerCase().includes(searchLower) ||
+      amenity.categoria?.toLowerCase().includes(searchLower)
+    )
+  }, [amenities, searchTerm])
 
-  const lowStockCount = amenities.filter(a => 
-    (a.stockActual || a.stock_actual || 0) <= (a.stockMinimo || a.stock_minimo || 0)
-  ).length
+  const lowStockCount = useMemo(() => {
+    return amenities.filter(a => 
+      (a.stockActual || a.stock_actual || 0) <= (a.stockMinimo || a.stock_minimo || 0)
+    ).length
+  }, [amenities])
 
   return (
     <div className="space-y-6">

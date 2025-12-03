@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Plus, Search, UserCheck, Edit, Eye } from 'lucide-react'
 import Modal from '../components/common/Modal'
 import ClienteForm from '../components/forms/ClienteForm'
@@ -65,15 +65,17 @@ const Clientes = () => {
     setIsViewModalOpen(true)
   }
 
-  const filteredClientes = clientes.filter(cliente => {
+  const filteredClientes = useMemo(() => {
     const searchLower = searchTerm.toLowerCase()
-    return (
-      cliente.nombre?.toLowerCase().includes(searchLower) ||
-      cliente.apellidos?.toLowerCase().includes(searchLower) ||
-      cliente.numeroDocumento?.includes(searchTerm) ||
-      cliente.numero_documento?.includes(searchTerm)
-    )
-  })
+    return clientes.filter(cliente => {
+      return (
+        cliente.nombre?.toLowerCase().includes(searchLower) ||
+        cliente.apellidos?.toLowerCase().includes(searchLower) ||
+        cliente.numeroDocumento?.includes(searchTerm) ||
+        cliente.numero_documento?.includes(searchTerm)
+      )
+    })
+  }, [clientes, searchTerm])
 
   // Mock data for fallback
   const mockClientes = [

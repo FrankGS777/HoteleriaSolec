@@ -42,11 +42,12 @@ const UsuarioForm = ({ data, onSubmit, onCancel }) => {
   const handleSubmit = (e) => {
     e.preventDefault()
     // Don't send password if it's empty (for edit mode)
-    const submitData = { ...formData }
-    if (data && !submitData.password) {
-      delete submitData.password
+    if (data && !formData.password) {
+      const { password, ...submitData } = formData
+      onSubmit(submitData)
+    } else {
+      onSubmit(formData)
     }
-    onSubmit(submitData)
   }
 
   return (

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Plus, Search, Edit, Trash2 } from 'lucide-react'
 import Modal from '../components/common/Modal'
 import ConfirmDialog from '../components/common/ConfirmDialog'
@@ -78,11 +78,20 @@ const Servicios = () => {
     setIsDeleteDialogOpen(true)
   }
 
-  const filteredServicios = servicios.filter(servicio =>
-    servicio.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    servicio.codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    servicio.categoria?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredServicios = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase()
+    return servicios.filter(servicio =>
+      servicio.nombre?.toLowerCase().includes(searchLower) ||
+      servicio.codigo?.toLowerCase().includes(searchLower) ||
+      servicio.categoria?.toLowerCase().includes(searchLower)
+    )
+  }, [servicios, searchTerm])
+  
+  const precioPromedio = useMemo(() => {
+    if (filteredServicios.length === 0) return 0
+    const total = filteredServicios.reduce((sum, s) => sum + parseFloat(s.precio || 0), 0)
+    return (total / filteredServicios.length).toFixed(2)
+  }, [filteredServicios])
 
   return (
     <div className="space-y-6">
@@ -133,7 +142,7 @@ const Servicios = () => {
         <div className="card">
           <div className="text-sm text-gray-600">Precio Promedio</div>
           <div className="text-2xl font-bold text-blue-600">
-            S/. {(filteredServicios.reduce((sum, s) => sum + parseFloat(s.precio || 0), 0) / (filteredServicios.length || 1)).toFixed(2)}
+            S/. {precioPromedio}
           </div>
         </div>
       </div>

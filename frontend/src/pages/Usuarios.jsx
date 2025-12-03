@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Plus, Search, Shield, Edit, Trash2 } from 'lucide-react'
 import StatusBadge from '../components/common/StatusBadge'
 import Modal from '../components/common/Modal'
@@ -79,11 +79,13 @@ const Usuarios = () => {
     setIsDeleteDialogOpen(true)
   }
 
-  const filteredUsuarios = usuarios.filter(usuario =>
-    usuario.nombreCompleto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    usuario.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    usuario.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredUsuarios = useMemo(() => {
+    return usuarios.filter(usuario =>
+      usuario.nombreCompleto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      usuario.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      usuario.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [usuarios, searchTerm])
 
   // Mock data for fallback
   const mockUsuarios = [

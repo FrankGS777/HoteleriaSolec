@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Plus, Search, Briefcase, Edit, Trash2 } from 'lucide-react'
 import StatusBadge from '../components/common/StatusBadge'
 import Modal from '../components/common/Modal'
@@ -79,12 +79,15 @@ const Empleados = () => {
     setIsDeleteDialogOpen(true)
   }
 
-  const filteredEmpleados = empleados.filter(empleado =>
-    empleado.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    empleado.apellidos?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    empleado.dni?.includes(searchTerm) ||
-    empleado.cargo?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredEmpleados = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase()
+    return empleados.filter(empleado =>
+      empleado.nombre?.toLowerCase().includes(searchLower) ||
+      empleado.apellidos?.toLowerCase().includes(searchLower) ||
+      empleado.dni?.includes(searchTerm) ||
+      empleado.cargo?.toLowerCase().includes(searchLower)
+    )
+  }, [empleados, searchTerm])
 
   return (
     <div className="space-y-6">
