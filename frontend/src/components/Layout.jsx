@@ -32,65 +32,199 @@ const Layout = ({ children }) => {
   const { user, logout } = useAuth()
   const location = useLocation()
 
-  const menuCategories = [
-    {
-      name: 'Operaciones',
-      items: [
-        { name: 'Dashboard', href: '/dashboard', icon: Home },
-        { name: 'Check-In', href: '/checkin', icon: LogIn },
-        { name: 'Check-Out', href: '/checkout', icon: LogOutIcon },
-        { name: 'Huéspedes', href: '/huespedes', icon: UserCheck }
-      ]
-    },
-    {
-      name: 'Reservas',
-      items: [
-        { name: 'Reservas', href: '/reservas', icon: Calendar },
-        { name: 'Clientes', href: '/clientes', icon: Users }
-      ]
-    },
-    {
-      name: 'Habitaciones',
-      items: [
-        { name: 'Habitaciones', href: '/habitaciones', icon: Hotel },
-        { name: 'Tipos de Habitación', href: '/tipos-habitacion', icon: Bed },
-        { name: 'Limpieza', href: '/limpieza', icon: Sparkles },
-        { name: 'Mantenimiento', href: '/mantenimiento', icon: Wrench }
-      ]
-    },
-    {
-      name: 'Servicios',
-      items: [
-        { name: 'Servicios', href: '/servicios', icon: ShoppingBag },
-        { name: 'Consumos', href: '/consumos', icon: FileText }
-      ]
-    },
-    {
-      name: 'Facturación',
-      items: [
-        { name: 'Facturas', href: '/facturas', icon: FileText },
-        { name: 'Pagos', href: '/pagos', icon: CreditCard }
-      ]
-    },
-    {
-      name: 'Inventario',
-      items: [
-        { name: 'Amenities', href: '/amenities', icon: Package },
-        { name: 'Movimientos', href: '/movimientos-inventario', icon: TrendingUp },
-        { name: 'Objetos Perdidos', href: '/objetos-perdidos', icon: Archive }
-      ]
-    },
-    {
-      name: 'Administración',
-      items: [
-        { name: 'Usuarios', href: '/usuarios', icon: Shield },
-        { name: 'Empleados', href: '/empleados', icon: Briefcase },
-        { name: 'Reportes', href: '/reportes', icon: BarChart3 },
-        { name: 'Configuración', href: '/configuracion', icon: Settings },
-        { name: 'Auditoría', href: '/auditoria', icon: Shield }
-      ]
-    }
-  ]
+  // Menu configuration by role
+  const menuByRole = {
+    ADMIN: [
+      {
+        name: 'Operaciones',
+        items: [
+          { name: 'Dashboard', href: '/dashboard', icon: Home },
+          { name: 'Check-In', href: '/checkin', icon: LogIn },
+          { name: 'Check-Out', href: '/checkout', icon: LogOutIcon },
+          { name: 'Huéspedes', href: '/huespedes', icon: UserCheck }
+        ]
+      },
+      {
+        name: 'Reservas',
+        items: [
+          { name: 'Reservas', href: '/reservas', icon: Calendar },
+          { name: 'Clientes', href: '/clientes', icon: Users }
+        ]
+      },
+      {
+        name: 'Habitaciones',
+        items: [
+          { name: 'Habitaciones', href: '/habitaciones', icon: Hotel },
+          { name: 'Tipos de Habitación', href: '/tipos-habitacion', icon: Bed }
+        ]
+      },
+      {
+        name: 'Servicios',
+        items: [
+          { name: 'Servicios', href: '/servicios', icon: ShoppingBag },
+          { name: 'Consumos', href: '/consumos', icon: FileText }
+        ]
+      },
+      {
+        name: 'Facturación',
+        items: [
+          { name: 'Facturas', href: '/facturas', icon: FileText },
+          { name: 'Pagos', href: '/pagos', icon: CreditCard }
+        ]
+      },
+      {
+        name: 'Housekeeping',
+        items: [
+          { name: 'Limpieza', href: '/limpieza', icon: Sparkles }
+        ]
+      },
+      {
+        name: 'Mantenimiento',
+        items: [
+          { name: 'Mantenimiento', href: '/mantenimiento', icon: Wrench }
+        ]
+      },
+      {
+        name: 'Inventario',
+        items: [
+          { name: 'Amenities', href: '/amenities', icon: Package },
+          { name: 'Movimientos', href: '/movimientos-inventario', icon: TrendingUp },
+          { name: 'Objetos Perdidos', href: '/objetos-perdidos', icon: Archive }
+        ]
+      },
+      {
+        name: 'Administración',
+        items: [
+          { name: 'Usuarios', href: '/usuarios', icon: Shield },
+          { name: 'Empleados', href: '/empleados', icon: Briefcase },
+          { name: 'Reportes', href: '/reportes', icon: BarChart3 },
+          { name: 'Configuración', href: '/configuracion', icon: Settings },
+          { name: 'Auditoría', href: '/auditoria', icon: Shield }
+        ]
+      }
+    ],
+    GERENTE: [
+      {
+        name: 'Operaciones',
+        items: [
+          { name: 'Dashboard', href: '/dashboard', icon: Home }
+        ]
+      },
+      {
+        name: 'Reservas',
+        items: [
+          { name: 'Reservas', href: '/reservas', icon: Calendar },
+          { name: 'Clientes', href: '/clientes', icon: Users }
+        ]
+      },
+      {
+        name: 'Habitaciones',
+        items: [
+          { name: 'Habitaciones', href: '/habitaciones', icon: Hotel },
+          { name: 'Tipos de Habitación', href: '/tipos-habitacion', icon: Bed }
+        ]
+      },
+      {
+        name: 'Servicios',
+        items: [
+          { name: 'Servicios', href: '/servicios', icon: ShoppingBag },
+          { name: 'Consumos', href: '/consumos', icon: FileText }
+        ]
+      },
+      {
+        name: 'Facturación',
+        items: [
+          { name: 'Facturas', href: '/facturas', icon: FileText },
+          { name: 'Pagos', href: '/pagos', icon: CreditCard }
+        ]
+      },
+      {
+        name: 'Administración',
+        items: [
+          { name: 'Empleados', href: '/empleados', icon: Briefcase },
+          { name: 'Reportes', href: '/reportes', icon: BarChart3 },
+          { name: 'Configuración', href: '/configuracion', icon: Settings }
+        ]
+      }
+    ],
+    RECEPCIONISTA: [
+      {
+        name: 'Operaciones',
+        items: [
+          { name: 'Dashboard', href: '/dashboard', icon: Home },
+          { name: 'Check-In', href: '/checkin', icon: LogIn },
+          { name: 'Check-Out', href: '/checkout', icon: LogOutIcon },
+          { name: 'Huéspedes', href: '/huespedes', icon: UserCheck }
+        ]
+      },
+      {
+        name: 'Reservas',
+        items: [
+          { name: 'Reservas', href: '/reservas', icon: Calendar },
+          { name: 'Clientes', href: '/clientes', icon: Users }
+        ]
+      },
+      {
+        name: 'Habitaciones',
+        items: [
+          { name: 'Habitaciones', href: '/habitaciones', icon: Hotel }
+        ]
+      },
+      {
+        name: 'Servicios',
+        items: [
+          { name: 'Servicios', href: '/servicios', icon: ShoppingBag },
+          { name: 'Consumos', href: '/consumos', icon: FileText }
+        ]
+      },
+      {
+        name: 'Facturación',
+        items: [
+          { name: 'Facturas', href: '/facturas', icon: FileText },
+          { name: 'Pagos', href: '/pagos', icon: CreditCard }
+        ]
+      }
+    ],
+    HOUSEKEEPING: [
+      {
+        name: 'Operaciones',
+        items: [
+          { name: 'Dashboard', href: '/dashboard', icon: Home }
+        ]
+      },
+      {
+        name: 'Limpieza',
+        items: [
+          { name: 'Limpieza', href: '/limpieza', icon: Sparkles },
+          { name: 'Habitaciones', href: '/habitaciones', icon: Hotel }
+        ]
+      },
+      {
+        name: 'Inventario',
+        items: [
+          { name: 'Objetos Perdidos', href: '/objetos-perdidos', icon: Archive }
+        ]
+      }
+    ],
+    MANTENIMIENTO: [
+      {
+        name: 'Operaciones',
+        items: [
+          { name: 'Dashboard', href: '/dashboard', icon: Home }
+        ]
+      },
+      {
+        name: 'Mantenimiento',
+        items: [
+          { name: 'Mantenimiento', href: '/mantenimiento', icon: Wrench },
+          { name: 'Habitaciones', href: '/habitaciones', icon: Hotel }
+        ]
+      }
+    ]
+  }
+
+  // Get menu items based on user role
+  const menuCategories = menuByRole[user?.role] || menuByRole.RECEPCIONISTA
 
   const isActive = (path) => location.pathname === path
 
