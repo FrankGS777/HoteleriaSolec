@@ -1,18 +1,35 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Search, Filter } from 'lucide-react'
+import { useToast } from '../hooks/useToast'
+import { habitacionesAPI } from '../services/api'
 
 const Habitaciones = () => {
   const [searchTerm, setSearchTerm] = useState('')
+  const [habitaciones, setHabitaciones] = useState([])
+  const [loading, setLoading] = useState(true)
+  const toast = useToast()
 
-  // Mock data - En producción, estos datos vendrían de la API
-  const habitaciones = [
-    { id: 1, numero: '101', tipo: 'Simple', piso: 1, estado: 'DISPONIBLE', estadoLimpieza: 'LIMPIA', precio: 150 },
-    { id: 2, numero: '102', tipo: 'Simple', piso: 1, estado: 'OCUPADA', estadoLimpieza: 'SUCIA', precio: 150 },
-    { id: 3, numero: '201', tipo: 'Doble', piso: 2, estado: 'OCUPADA', estadoLimpieza: 'EN_LIMPIEZA', precio: 250 },
-    { id: 4, numero: '202', tipo: 'Doble', piso: 2, estado: 'DISPONIBLE', estadoLimpieza: 'LIMPIA', precio: 250 },
-    { id: 5, numero: '303', tipo: 'Suite', piso: 3, estado: 'MANTENIMIENTO', estadoLimpieza: 'LIMPIA', precio: 450 },
-    { id: 6, numero: '403', tipo: 'Suite Presidencial', piso: 4, estado: 'DISPONIBLE', estadoLimpieza: 'LIMPIA', precio: 800 },
-  ]
+  useEffect(() => {
+    fetchHabitaciones()
+  }, [])
+
+  const fetchHabitaciones = async () => {
+    try {
+      setLoading(true)
+      const response = await habitacionesAPI.getAll()
+      setHabitaciones(response.data.data || [])
+    } catch (error) {
+      toast.error('Error al cargar habitaciones')
+      console.error('Error fetching habitaciones:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getTipoHabitacion = (habitacion) => {
+    if (!habitacion?.tipoHabitacion) return 'Sin tipo'
+    return typeof habitacion.tipoHabitacion === 'string' ? habitacion.tipoHabitacion : habitacion.tipoHabitacion.nombre || 'Sin tipo'
+  }
 
   const getEstadoColor = (estado) => {
     switch (estado) {
@@ -84,47 +101,58 @@ const Habitaciones = () => {
       </div>
 
       {/* Habitaciones Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {habitaciones.map((habitacion) => (
-          <div key={habitacion.id} className="card hover:shadow-lg transition-shadow">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">
-                  Hab. {habitacion.numero}
-                </h3>
-                <p className="text-sm text-gray-600">{habitacion.tipo}</p>
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <p className="mt-2 text-gray-600">Cargando habitaciones...</p>
+        </div>
+      ) : habitaciones.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-600">No se encontraron habitaciones</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {habitaciones.map((habitacion) => (
+            <div key={habitacion.id} className="card hover:shadow-lg transition-shadow">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Hab. {habitacion.numero}
+                  </h3>
+                  <p className="text-sm text-gray-600">{getTipoHabitacion(habitacion)}</p>
+                </div>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getEstadoColor(habitacion.estado)}`}>
+                  {habitacion.estado}
+                </span>
               </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getEstadoColor(habitacion.estado)}`}>
-                {habitacion.estado}
-              </span>
-            </div>
-            
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Piso:</span>
-                <span className="font-medium">{habitacion.piso}</span>
+              
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Piso:</span>
+                  <span className="font-medium">{habitacion.piso}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Limpieza:</span>
+                  <span className="font-medium">{habitacion.estadoLimpieza || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Precio:</span>
+                  <span className="font-bold text-gold-600">S/ {habitacion.precioBase || habitacion.precio || 0}</span>
+                </div>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Limpieza:</span>
-                <span className="font-medium">{habitacion.estadoLimpieza}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Precio:</span>
-                <span className="font-bold text-gold-600">S/ {habitacion.precio}</span>
-              </div>
-            </div>
 
-            <div className="flex gap-2">
-              <button className="flex-1 btn-secondary text-sm py-2">
-                Ver Detalles
-              </button>
-              <button className="flex-1 btn-primary text-sm py-2">
-                Reservar
-              </button>
+              <div className="flex gap-2">
+                <button className="flex-1 btn-secondary text-sm py-2">
+                  Ver Detalles
+                </button>
+                <button className="flex-1 btn-primary text-sm py-2">
+                  Reservar
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

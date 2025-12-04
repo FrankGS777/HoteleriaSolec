@@ -53,6 +53,25 @@ public class UsuarioService {
         return usuarioRepository.save(usuario);
     }
 
+    public Usuario createWithRoleId(Usuario usuario, Long roleId) {
+        if (usuarioRepository.existsByUsername(usuario.getUsername())) {
+            throw new IllegalArgumentException("El username ya existe");
+        }
+        if (usuarioRepository.existsByEmail(usuario.getEmail())) {
+            throw new IllegalArgumentException("El email ya existe");
+        }
+        
+        // Find role by ID
+        var role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Role no encontrado con id: " + roleId));
+        usuario.setRole(role);
+        
+        // Encrypt password
+        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+        
+        return usuarioRepository.save(usuario);
+    }
+
     public Usuario update(Long id, Usuario usuario) {
         Usuario existing = findById(id);
         
@@ -73,6 +92,41 @@ public class UsuarioService {
         existing.setNombreCompleto(usuario.getNombreCompleto());
         existing.setActivo(usuario.getActivo());
         existing.setRole(usuario.getRole());
+        
+        // Only update password if provided
+        if (usuario.getPassword() != null && !usuario.getPassword().isEmpty()) {
+            existing.setPassword(passwordEncoder.encode(usuario.getPassword()));
+        }
+        
+        return usuarioRepository.save(existing);
+    }
+
+    public Usuario updateWithRoleId(Long id, Usuario usuario, Long roleId) {
+        Usuario existing = findById(id);
+        
+        // Check username uniqueness if changed
+        if (!existing.getUsername().equals(usuario.getUsername()) 
+                && usuarioRepository.existsByUsername(usuario.getUsername())) {
+            throw new IllegalArgumentException("El username ya existe");
+        }
+        
+        // Check email uniqueness if changed
+        if (!existing.getEmail().equals(usuario.getEmail()) 
+                && usuarioRepository.existsByEmail(usuario.getEmail())) {
+            throw new IllegalArgumentException("El email ya existe");
+        }
+        
+        existing.setUsername(usuario.getUsername());
+        existing.setEmail(usuario.getEmail());
+        existing.setNombreCompleto(usuario.getNombreCompleto());
+        existing.setActivo(usuario.getActivo());
+        
+        // Find and set role by ID if provided
+        if (roleId != null) {
+            var role = roleRepository.findById(roleId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Role no encontrado con id: " + roleId));
+            existing.setRole(role);
+        }
         
         // Only update password if provided
         if (usuario.getPassword() != null && !usuario.getPassword().isEmpty()) {

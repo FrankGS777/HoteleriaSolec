@@ -1,42 +1,40 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Search, Calendar as CalendarIcon } from 'lucide-react'
+import { useToast } from '../hooks/useToast'
+import { reservasAPI } from '../services/api'
 
 const Reservas = () => {
   const [searchTerm, setSearchTerm] = useState('')
+  const [reservas, setReservas] = useState([])
+  const [loading, setLoading] = useState(true)
+  const toast = useToast()
 
-  // Mock data
-  const reservas = [
-    {
-      id: 1,
-      codigo: 'RES-001',
-      cliente: 'Juan Pérez',
-      habitacion: '201',
-      fechaEntrada: '2024-12-05',
-      fechaSalida: '2024-12-08',
-      estado: 'CONFIRMADA',
-      monto: 750
-    },
-    {
-      id: 2,
-      codigo: 'RES-002',
-      cliente: 'María García',
-      habitacion: '105',
-      fechaEntrada: '2024-12-06',
-      fechaSalida: '2024-12-10',
-      estado: 'PENDIENTE',
-      monto: 600
-    },
-    {
-      id: 3,
-      codigo: 'RES-003',
-      cliente: 'Carlos López',
-      habitacion: '303',
-      fechaEntrada: '2024-12-03',
-      fechaSalida: '2024-12-07',
-      estado: 'COMPLETADA',
-      monto: 1800
-    },
-  ]
+  useEffect(() => {
+    fetchReservas()
+  }, [])
+
+  const fetchReservas = async () => {
+    try {
+      setLoading(true)
+      const response = await reservasAPI.getAll()
+      setReservas(response.data.data || [])
+    } catch (error) {
+      toast.error('Error al cargar reservas')
+      console.error('Error fetching reservas:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getClienteNombre = (reserva) => {
+    if (!reserva?.cliente) return 'Sin cliente'
+    return typeof reserva.cliente === 'string' ? reserva.cliente : reserva.cliente.nombreCompleto || reserva.cliente.nombre || 'Sin cliente'
+  }
+
+  const getHabitacionNumero = (reserva) => {
+    if (!reserva?.habitacion) return 'Sin habitación'
+    return typeof reserva.habitacion === 'string' ? reserva.habitacion : reserva.habitacion.numero || 'Sin habitación'
+  }
 
   const getEstadoBadge = (estado) => {
     const colors = {
@@ -104,75 +102,86 @@ const Reservas = () => {
 
       {/* Reservas Table */}
       <div className="card">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Código
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Cliente
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Habitación
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Entrada
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Salida
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Monto
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {reservas.map((reserva) => (
-                <tr key={reserva.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {reserva.codigo}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {reserva.cliente}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {reserva.habitacion}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {reserva.fechaEntrada}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {reserva.fechaSalida}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                    S/ {reserva.monto}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getEstadoBadge(reserva.estado)}`}>
-                      {reserva.estado}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <button className="text-primary-600 hover:text-primary-900 mr-3">
-                      Ver
-                    </button>
-                    <button className="text-primary-600 hover:text-primary-900">
-                      Editar
-                    </button>
-                  </td>
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <p className="mt-2 text-gray-600">Cargando reservas...</p>
+          </div>
+        ) : reservas.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600">No se encontraron reservas</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Código
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Cliente
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Habitación
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Entrada
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Salida
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Monto
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {reservas.map((reserva) => (
+                  <tr key={reserva.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {reserva.codigo || `RES-${reserva.id}`}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {getClienteNombre(reserva)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {getHabitacionNumero(reserva)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {reserva.fechaEntrada}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {reserva.fechaSalida}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                      S/ {reserva.montoTotal || reserva.monto || 0}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getEstadoBadge(reserva.estado)}`}>
+                        {reserva.estado}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button className="text-primary-600 hover:text-primary-900 mr-3">
+                        Ver
+                      </button>
+                      <button className="text-primary-600 hover:text-primary-900">
+                        Editar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )

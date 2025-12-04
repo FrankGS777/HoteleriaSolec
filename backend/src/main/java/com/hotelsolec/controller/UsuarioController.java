@@ -3,12 +3,14 @@ package com.hotelsolec.controller;
 import com.hotelsolec.dto.ApiResponse;
 import com.hotelsolec.entity.Usuario;
 import com.hotelsolec.service.UsuarioService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/usuarios")
@@ -17,6 +19,9 @@ public class UsuarioController {
 
     @Autowired
     private UsuarioService usuarioService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<Usuario>>> getAll() {
@@ -37,15 +42,47 @@ public class UsuarioController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Usuario>> create(@Valid @RequestBody Usuario usuario) {
-        Usuario created = usuarioService.create(usuario);
-        return ResponseEntity.ok(ApiResponse.success("Usuario creado exitosamente", created));
+    public ResponseEntity<ApiResponse<Usuario>> create(@RequestBody Map<String, Object> payload) {
+        try {
+            // Extract roleId if present
+            Long roleId = payload.containsKey("roleId") ? 
+                    ((Number) payload.get("roleId")).longValue() : null;
+            
+            // Convert payload to Usuario (excluding roleId)
+            payload.remove("roleId");
+            Usuario usuario = objectMapper.convertValue(payload, Usuario.class);
+            
+            // Use appropriate service method
+            Usuario created = roleId != null ? 
+                    usuarioService.createWithRoleId(usuario, roleId) : 
+                    usuarioService.create(usuario);
+            
+            return ResponseEntity.ok(ApiResponse.success("Usuario creado exitosamente", created));
+        } catch (Exception e) {
+            throw new RuntimeException("Error al procesar la solicitud: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Usuario>> update(@PathVariable Long id, @Valid @RequestBody Usuario usuario) {
-        Usuario updated = usuarioService.update(id, usuario);
-        return ResponseEntity.ok(ApiResponse.success("Usuario actualizado exitosamente", updated));
+    public ResponseEntity<ApiResponse<Usuario>> update(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+        try {
+            // Extract roleId if present
+            Long roleId = payload.containsKey("roleId") ? 
+                    ((Number) payload.get("roleId")).longValue() : null;
+            
+            // Convert payload to Usuario (excluding roleId)
+            payload.remove("roleId");
+            Usuario usuario = objectMapper.convertValue(payload, Usuario.class);
+            
+            // Use appropriate service method
+            Usuario updated = roleId != null ? 
+                    usuarioService.updateWithRoleId(id, usuario, roleId) : 
+                    usuarioService.update(id, usuario);
+            
+            return ResponseEntity.ok(ApiResponse.success("Usuario actualizado exitosamente", updated));
+        } catch (Exception e) {
+            throw new RuntimeException("Error al procesar la solicitud: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
