@@ -1,12 +1,42 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Search, Wrench, AlertTriangle } from 'lucide-react'
 import StatusBadge from '../components/common/StatusBadge'
+import { useToast } from '../hooks/useToast'
+import { mantenimientoAPI } from '../services/api'
 
 const Mantenimiento = () => {
   const [searchTerm, setSearchTerm] = useState('')
+  const [ordenesMantenimiento, setOrdenesMantenimiento] = useState([])
+  const [loading, setLoading] = useState(true)
+  const toast = useToast()
 
-  // Mock data
-  const ordenesMantenimiento = [
+  useEffect(() => {
+    fetchMantenimiento()
+  }, [])
+
+  const fetchMantenimiento = async () => {
+    try {
+      setLoading(true)
+      const response = await mantenimientoAPI.getAll()
+      setOrdenesMantenimiento(response.data.data || [])
+    } catch (error) {
+      toast.error('Error al cargar órdenes de mantenimiento')
+      console.error('Error fetching mantenimiento:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getHabitacionNumero = (orden) => {
+    if (!orden?.habitacion) return 'N/A'
+    return typeof orden.habitacion === 'string' ? orden.habitacion : orden.habitacion.numero || 'N/A'
+  }
+
+  const getEmpleadoNombre = (orden) => {
+    if (!orden?.tecnico && !orden?.empleado) return 'Sin asignar'
+    const empleado = orden.tecnico || orden.empleado
+    return typeof empleado === 'string' ? empleado : empleado.nombreCompleto || empleado.nombre || 'Sin asignar'
+  }
     {
       id: 1,
       numero: 'MAN-001',
@@ -123,8 +153,18 @@ const Mantenimiento = () => {
       </div>
 
       {/* Órdenes de Mantenimiento */}
-      <div className="space-y-4">
-        {ordenesMantenimiento.map((orden) => (
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <p className="mt-2 text-gray-600">Cargando órdenes...</p>
+        </div>
+      ) : ordenesMantenimiento.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-600">No se encontraron órdenes de mantenimiento</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {ordenesMantenimiento.map((orden) => (
           <div key={orden.id} className="card hover:shadow-lg transition-shadow">
             <div className="flex justify-between items-start">
               <div className="flex-1">
@@ -142,7 +182,7 @@ const Mantenimiento = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
                   <div>
                     <h4 className="text-sm font-semibold text-gray-700 mb-2">Ubicación</h4>
-                    <p className="text-lg font-bold text-gray-900">Habitación {orden.habitacion}</p>
+                    <p className="text-lg font-bold text-gray-900">Habitación {getHabitacionNumero(orden)}</p>
                   </div>
 
                   <div>
@@ -153,9 +193,9 @@ const Mantenimiento = () => {
 
                   <div>
                     <h4 className="text-sm font-semibold text-gray-700 mb-2">Personal</h4>
-                    <p className="text-sm text-gray-600">Reportado por: {orden.reportadoPor}</p>
+                    <p className="text-sm text-gray-600">Reportado por: {orden.reportadoPor || 'N/A'}</p>
                     <p className="text-sm text-gray-600">
-                      Técnico: {orden.tecnico || <span className="text-gray-400">Sin asignar</span>}
+                      Técnico: {getEmpleadoNombre(orden) === 'Sin asignar' ? <span className="text-gray-400">Sin asignar</span> : getEmpleadoNombre(orden)}
                     </p>
                   </div>
                 </div>
@@ -204,8 +244,9 @@ const Mantenimiento = () => {
               </div>
             </div>
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
