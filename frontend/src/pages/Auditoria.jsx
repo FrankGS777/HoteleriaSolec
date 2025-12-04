@@ -1,53 +1,35 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, Shield, Filter } from 'lucide-react'
+import { useToast } from '../hooks/useToast'
+import { auditoriaAPI } from '../services/api'
 
 const Auditoria = () => {
   const [searchTerm, setSearchTerm] = useState('')
+  const [registrosAuditoria, setRegistrosAuditoria] = useState([])
+  const [loading, setLoading] = useState(true)
+  const toast = useToast()
 
-  // Mock data
-  const registrosAuditoria = [
-    {
-      id: 1,
-      fecha: '2024-12-03 14:30:25',
-      usuario: 'admin',
-      accion: 'LOGIN',
-      modulo: 'Autenticación',
-      descripcion: 'Inicio de sesión exitoso',
-      ip: '192.168.1.100',
-      detalles: 'Usuario: admin'
-    },
-    {
-      id: 2,
-      fecha: '2024-12-03 14:35:10',
-      usuario: 'admin',
-      accion: 'CREATE',
-      modulo: 'Usuarios',
-      descripcion: 'Creación de nuevo usuario',
-      ip: '192.168.1.100',
-      detalles: 'Usuario creado: gerente01'
-    },
-    {
-      id: 3,
-      fecha: '2024-12-03 14:40:15',
-      usuario: 'gerente01',
-      accion: 'LOGIN',
-      modulo: 'Autenticación',
-      descripcion: 'Inicio de sesión exitoso',
-      ip: '192.168.1.105',
-      detalles: 'Usuario: gerente01'
-    },
-    {
-      id: 4,
-      fecha: '2024-12-03 14:45:30',
-      usuario: 'gerente01',
-      accion: 'UPDATE',
-      modulo: 'Habitaciones',
-      descripcion: 'Actualización de habitación',
-      ip: '192.168.1.105',
-      detalles: 'Habitación 201: Estado cambiado a OCUPADA'
-    },
-    {
-      id: 5,
+  useEffect(() => {
+    fetchAuditoria()
+  }, [])
+
+  const fetchAuditoria = async () => {
+    try {
+      setLoading(true)
+      const response = await auditoriaAPI.getAll()
+      setRegistrosAuditoria(response.data.data || [])
+    } catch (error) {
+      toast.error('Error al cargar auditoría')
+      console.error('Error fetching auditoria:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getUsuarioNombre = (registro) => {
+    if (!registro?.usuario) return 'Sistema'
+    return typeof registro.usuario === 'string' ? registro.usuario : registro.usuario.username || registro.usuario.nombreCompleto || 'Sistema'
+  }
       fecha: '2024-12-03 15:00:00',
       usuario: 'recepcion01',
       accion: 'CREATE',
@@ -139,51 +121,63 @@ const Auditoria = () => {
 
       {/* Auditoria Table */}
       <div className="card">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha/Hora
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Usuario
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acción
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Módulo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Descripción
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  IP
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {registrosAuditoria.map((registro) => (
-                <tr key={registro.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {registro.fecha}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-8 w-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                        {registro.usuario.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">
-                          {registro.usuario}
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <p className="mt-2 text-gray-600">Cargando auditoría...</p>
+          </div>
+        ) : registrosAuditoria.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600">No se encontraron registros de auditoría</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Fecha/Hora
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Usuario
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acción
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Módulo
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Descripción
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    IP
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {registrosAuditoria.map((registro) => {
+                  const usuario = getUsuarioNombre(registro)
+                  return (
+                    <tr key={registro.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {registro.fechaHora || registro.fecha || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-8 w-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                            {usuario.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="ml-3">
+                            <div className="text-sm font-medium text-gray-900">
+                              {usuario}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </td>
+                      </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getAccionColor(registro.accion)}`}>
                       {registro.accion}
@@ -196,19 +190,21 @@ const Auditoria = () => {
                     <div>{registro.descripcion}</div>
                     <div className="text-xs text-gray-500 mt-1">{registro.detalles}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
-                    {registro.ip}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <button className="text-primary-600 hover:text-primary-900">
-                      Ver Detalle
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
+                        {registro.ip || registro.ipAddress || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <button className="text-primary-600 hover:text-primary-900">
+                          Ver Detalle
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Info Alert */}

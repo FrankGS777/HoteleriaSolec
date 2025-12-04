@@ -1,53 +1,31 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Search, Bed } from 'lucide-react'
 import StatusBadge from '../components/common/StatusBadge'
+import { useToast } from '../hooks/useToast'
+import { tiposHabitacionAPI } from '../services/api'
 
 const TiposHabitacion = () => {
   const [searchTerm, setSearchTerm] = useState('')
+  const [tiposHabitacion, setTiposHabitacion] = useState([])
+  const [loading, setLoading] = useState(true)
+  const toast = useToast()
 
-  // Mock data
-  const tiposHabitacion = [
-    {
-      id: 1,
-      nombre: 'Simple',
-      descripcion: 'Habitación individual con cama simple',
-      capacidadPersonas: 1,
-      numeroCamas: 1,
-      precioBase: 150,
-      metrosCuadrados: 20,
-      caracteristicas: 'TV, WiFi, Baño privado',
-      cantidadHabitaciones: 8,
-      activo: true
-    },
-    {
-      id: 2,
-      nombre: 'Doble',
-      descripcion: 'Habitación con cama doble o dos camas',
-      capacidadPersonas: 2,
-      numeroCamas: 1,
-      precioBase: 250,
-      metrosCuadrados: 30,
-      caracteristicas: 'TV, WiFi, Baño privado, Mini bar',
-      cantidadHabitaciones: 10,
-      activo: true
-    },
-    {
-      id: 3,
-      nombre: 'Suite',
-      descripcion: 'Suite con sala de estar separada',
-      capacidadPersonas: 3,
-      numeroCamas: 2,
-      precioBase: 450,
-      metrosCuadrados: 50,
-      caracteristicas: 'TV, WiFi, Baño privado, Mini bar, Jacuzzi',
-      cantidadHabitaciones: 3,
-      activo: true
-    },
-    {
-      id: 4,
-      nombre: 'Suite Presidencial',
-      descripcion: 'Suite de lujo con todas las comodidades',
-      capacidadPersonas: 4,
+  useEffect(() => {
+    fetchTiposHabitacion()
+  }, [])
+
+  const fetchTiposHabitacion = async () => {
+    try {
+      setLoading(true)
+      const response = await tiposHabitacionAPI.getAll()
+      setTiposHabitacion(response.data.data || [])
+    } catch (error) {
+      toast.error('Error al cargar tipos de habitación')
+      console.error('Error fetching tipos habitacion:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
       numeroCamas: 2,
       precioBase: 800,
       metrosCuadrados: 80,
@@ -106,8 +84,18 @@ const TiposHabitacion = () => {
       </div>
 
       {/* Tipos Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {tiposHabitacion.map((tipo) => (
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <p className="mt-2 text-gray-600">Cargando tipos de habitación...</p>
+        </div>
+      ) : tiposHabitacion.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-600">No se encontraron tipos de habitación</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {tiposHabitacion.map((tipo) => (
           <div key={tipo.id} className="card hover:shadow-lg transition-shadow">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -157,8 +145,9 @@ const TiposHabitacion = () => {
               </button>
             </div>
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
