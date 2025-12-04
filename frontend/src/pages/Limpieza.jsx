@@ -1,49 +1,45 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Search, Sparkles } from 'lucide-react'
 import StatusBadge from '../components/common/StatusBadge'
+import { useToast } from '../hooks/useToast'
+import { limpiezaAPI } from '../services/api'
 
 const Limpieza = () => {
   const [searchTerm, setSearchTerm] = useState('')
+  const [tareasLimpieza, setTareasLimpieza] = useState([])
+  const [loading, setLoading] = useState(true)
+  const toast = useToast()
 
-  // Mock data
-  const tareasLimpieza = [
-    {
-      id: 1,
-      habitacion: '201',
-      tipo: 'Doble',
-      prioridad: 'ALTA',
-      estado: 'PENDIENTE',
-      empleado: null,
-      tipoLimpieza: 'Limpieza de Salida',
-      horaAsignada: '10:00',
-      observaciones: 'Check-out programado'
-    },
-    {
-      id: 2,
-      habitacion: '105',
-      tipo: 'Simple',
-      prioridad: 'MEDIA',
-      estado: 'EN_LIMPIEZA',
-      empleado: 'Ana López',
-      tipoLimpieza: 'Limpieza Diaria',
-      horaAsignada: '09:30',
-      horaInicio: '09:45',
-      observaciones: null
-    },
-    {
-      id: 3,
-      habitacion: '303',
-      tipo: 'Suite',
-      prioridad: 'BAJA',
-      estado: 'COMPLETADO',
-      empleado: 'María García',
-      tipoLimpieza: 'Limpieza Diaria',
-      horaAsignada: '08:00',
-      horaInicio: '08:15',
-      horaFin: '09:30',
-      observaciones: null
+  useEffect(() => {
+    fetchTareas()
+  }, [])
+
+  const fetchTareas = async () => {
+    try {
+      setLoading(true)
+      const response = await limpiezaAPI.getAll()
+      setTareasLimpieza(response.data.data || [])
+    } catch (error) {
+      toast.error('Error al cargar tareas de limpieza')
+      console.error('Error fetching limpieza:', error)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+
+  const getHabitacionInfo = (tarea) => {
+    if (!tarea?.habitacion) return { numero: 'N/A', tipo: 'N/A' }
+    if (typeof tarea.habitacion === 'string') return { numero: tarea.habitacion, tipo: 'N/A' }
+    return {
+      numero: tarea.habitacion.numero || 'N/A',
+      tipo: tarea.habitacion.tipoHabitacion?.nombre || tarea.habitacion.tipo || 'N/A'
+    }
+  }
+
+  const getEmpleadoNombre = (tarea) => {
+    if (!tarea?.empleado) return 'Sin asignar'
+    return typeof tarea.empleado === 'string' ? tarea.empleado : tarea.empleado.nombreCompleto || tarea.empleado.nombre || 'Sin asignar'
+  }
 
   const getPrioridadColor = (prioridad) => {
     const colors = {
@@ -107,85 +103,103 @@ const Limpieza = () => {
 
       {/* Tareas de Limpieza */}
       <div className="card">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Habitación
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tipo Limpieza
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Prioridad
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Empleado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Horario
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {tareasLimpieza.map((tarea) => (
-                <tr key={tarea.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-bold text-primary-600">Hab. {tarea.habitacion}</div>
-                    <div className="text-sm text-gray-500">{tarea.tipo}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tarea.tipoLimpieza}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPrioridadColor(tarea.prioridad)}`}>
-                      {tarea.prioridad}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tarea.empleado || <span className="text-gray-400">Sin asignar</span>}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">Asignado: {tarea.horaAsignada}</div>
-                    {tarea.horaInicio && (
-                      <div className="text-sm text-gray-500">Inicio: {tarea.horaInicio}</div>
-                    )}
-                    {tarea.horaFin && (
-                      <div className="text-sm text-green-600">Fin: {tarea.horaFin}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={tarea.estado} type="limpieza" />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {tarea.estado === 'PENDIENTE' && (
-                      <button className="text-blue-600 hover:text-blue-900">
-                        Asignar
-                      </button>
-                    )}
-                    {tarea.estado === 'EN_LIMPIEZA' && (
-                      <button className="text-green-600 hover:text-green-900">
-                        Completar
-                      </button>
-                    )}
-                    {tarea.estado === 'COMPLETADO' && (
-                      <button className="text-primary-600 hover:text-primary-900">
-                        Ver Detalle
-                      </button>
-                    )}
-                  </td>
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <p className="mt-2 text-gray-600">Cargando tareas...</p>
+          </div>
+        ) : tareasLimpieza.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600">No se encontraron tareas de limpieza</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Habitación
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tipo Limpieza
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Prioridad
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Empleado
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Horario
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {tareasLimpieza.map((tarea) => {
+                  const habitacion = getHabitacionInfo(tarea)
+                  return (
+                    <tr key={tarea.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-bold text-primary-600">Hab. {habitacion.numero}</div>
+                        <div className="text-sm text-gray-500">{habitacion.tipo}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {tarea.tipoLimpieza || tarea.tipo || 'Limpieza'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPrioridadColor(tarea.prioridad || 'MEDIA')}`}>
+                          {tarea.prioridad || 'MEDIA'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {getEmpleadoNombre(tarea) === 'Sin asignar' ? (
+                          <span className="text-gray-400">Sin asignar</span>
+                        ) : (
+                          getEmpleadoNombre(tarea)
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">Asignado: {tarea.horaAsignada || tarea.fecha || 'N/A'}</div>
+                        {tarea.horaInicio && (
+                          <div className="text-sm text-gray-500">Inicio: {tarea.horaInicio}</div>
+                        )}
+                        {tarea.horaFin && (
+                          <div className="text-sm text-green-600">Fin: {tarea.horaFin}</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <StatusBadge status={tarea.estado || 'PENDIENTE'} type="limpieza" />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {tarea.estado === 'PENDIENTE' && (
+                          <button className="text-blue-600 hover:text-blue-900">
+                            Asignar
+                          </button>
+                        )}
+                        {tarea.estado === 'EN_LIMPIEZA' && (
+                          <button className="text-green-600 hover:text-green-900">
+                            Completar
+                          </button>
+                        )}
+                        {tarea.estado === 'COMPLETADO' && (
+                          <button className="text-primary-600 hover:text-primary-900">
+                            Ver Detalle
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )

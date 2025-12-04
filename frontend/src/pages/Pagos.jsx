@@ -1,42 +1,41 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Search, CreditCard, DollarSign } from 'lucide-react'
+import { useToast } from '../hooks/useToast'
+import { pagosAPI } from '../services/api'
 
 const Pagos = () => {
   const [searchTerm, setSearchTerm] = useState('')
+  const [pagos, setPagos] = useState([])
+  const [loading, setLoading] = useState(true)
+  const toast = useToast()
 
-  // Mock data
-  const pagos = [
-    {
-      id: 1,
-      fecha: '2024-12-03 10:30',
-      factura: 'F001-00123',
-      cliente: 'Juan Pérez García',
-      monto: 885,
-      metodoPago: 'Tarjeta de Crédito',
-      referencia: 'VISA-****1234',
-      estado: 'COMPLETADO'
-    },
-    {
-      id: 2,
-      fecha: '2024-12-03 14:15',
-      factura: 'F001-00124',
-      cliente: 'María López Sánchez',
-      monto: 300,
-      metodoPago: 'Efectivo',
-      referencia: '-',
-      estado: 'COMPLETADO'
-    },
-    {
-      id: 3,
-      fecha: '2024-12-02 16:45',
-      factura: 'F001-00125',
-      cliente: 'Carlos Rodríguez Pérez',
-      monto: 1416,
-      metodoPago: 'Transferencia Bancaria',
-      referencia: 'TRF-789456',
-      estado: 'COMPLETADO'
+  useEffect(() => {
+    fetchPagos()
+  }, [])
+
+  const fetchPagos = async () => {
+    try {
+      setLoading(true)
+      const response = await pagosAPI.getAll()
+      setPagos(response.data.data || [])
+    } catch (error) {
+      toast.error('Error al cargar pagos')
+      console.error('Error fetching pagos:', error)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+
+  const getFacturaNumero = (pago) => {
+    if (!pago?.factura) return 'N/A'
+    return typeof pago.factura === 'string' ? pago.factura : pago.factura.numeroFactura || pago.factura.numero || `F-${pago.factura.id}`
+  }
+
+  const getClienteNombre = (pago) => {
+    if (!pago?.factura?.reserva?.cliente) return 'Sin cliente'
+    const cliente = pago.factura.reserva.cliente
+    return typeof cliente === 'string' ? cliente : cliente.nombreCompleto || cliente.nombre || 'Sin cliente'
+  }
 
   return (
     <div className="space-y-6">
@@ -94,77 +93,88 @@ const Pagos = () => {
 
       {/* Pagos Table */}
       <div className="card">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha/Hora
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Factura
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Cliente
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Monto
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Método de Pago
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Referencia
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {pagos.map((pago) => (
-                <tr key={pago.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {pago.fecha}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-semibold text-primary-600">
-                      {pago.factura}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {pago.cliente}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
-                    S/ {pago.monto}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <CreditCard size={16} className="text-gray-400" />
-                      <span className="text-sm text-gray-900">{pago.metodoPago}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {pago.referencia}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                      {pago.estado}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <button className="text-primary-600 hover:text-primary-900">
-                      Ver Comprobante
-                    </button>
-                  </td>
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <p className="mt-2 text-gray-600">Cargando pagos...</p>
+          </div>
+        ) : pagos.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600">No se encontraron pagos</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Fecha/Hora
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Factura
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Cliente
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Monto
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Método de Pago
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Referencia
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {pagos.map((pago) => (
+                  <tr key={pago.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {pago.fechaPago || pago.fecha || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-semibold text-primary-600">
+                        {getFacturaNumero(pago)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {getClienteNombre(pago)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
+                      S/ {pago.monto || 0}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <CreditCard size={16} className="text-gray-400" />
+                        <span className="text-sm text-gray-900">{pago.metodoPago || 'N/A'}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {pago.numeroTransaccion || pago.referencia || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        {pago.estado || 'COMPLETADO'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button className="text-primary-600 hover:text-primary-900">
+                        Ver Comprobante
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )
